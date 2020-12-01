@@ -120,7 +120,11 @@ const commandsModule = ({ commandsManager, UINotificationService }) => {
     },
     resetMPRView() {
       apis.forEach(api => {
+        // Reset crosshairs
         api.resetOrientation();
+
+        // Reset window/level
+        api.resetWindowLevel();
       });
 
       // Reset the crosshairs
