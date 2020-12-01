@@ -122,11 +122,16 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       return apis[index];
     },
     resetMPRView() {
-      // Reset orientation
-      apis.forEach(api => api.resetOrientation());
+      apis.forEach(api => {
+        // Reset crosshairs
+        api.resetOrientation();
 
-      // Reset VOI
-      if (defaultVOI) setVOI(defaultVOI);
+        // Reset window/level
+        api.resetWindowLevel();
+
+        // Reset VOI
+        if (defaultVOI) setVOI(defaultVOI);
+      });
 
       // Reset the crosshairs
       apis[0].svgWidgets.rotatableCrosshairsWidget.resetCrosshairs(apis, 0);
