@@ -237,6 +237,15 @@ const definitions = [
     commandName: 'setCornerstoneLayout',
     context: 'ACTIVE_VIEWPORT::VTK',
   },
+  {
+    id: 'Exit3DView',
+    label: 'Exit 3D View',
+    icon: 'times',
+    //
+    type: TOOLBAR_BUTTON_TYPES.COMMAND,
+    commandName: 'setCornerstoneLayout',
+    context: 'ACTIVE_VIEWPORT::VTK-3D',
+  },
 ];
 
 export default {
