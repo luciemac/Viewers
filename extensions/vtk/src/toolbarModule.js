@@ -137,6 +137,15 @@ const definitions = [
     commandName: 'mpr2d',
     context: 'ACTIVE_VIEWPORT::CORNERSTONE',
   },
+  {
+    id: '3DView',
+    label: '3D View',
+    icon: '3d-rotate',
+    //
+    CustomComponent: VTKMPRToolbarButton,
+    type: TOOLBAR_BUTTON_TYPES.COMMAND,
+    commandName: 'enable3DView',
+  },
 ];
 
 export default {

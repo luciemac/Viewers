@@ -8,6 +8,7 @@ import {
 import { getImageData } from 'react-vtkjs-viewport';
 import { vec3 } from 'gl-matrix';
 import setMPRLayout from './utils/setMPRLayout.js';
+import setMPRAnd3DLayout from './utils/setMPRAnd3DLayout.js';
 import setViewportToVTK from './utils/setViewportToVTK.js';
 import Constants from 'vtk.js/Sources/Rendering/Core/VolumeMapper/Constants.js';
 import OHIFVTKViewport from './OHIFVTKViewport';
@@ -105,6 +106,23 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
     });
   }
 
+  async function set2DOrientation(viewports, sliceNormal, viewUp) {
+    const api = await _getActiveViewportVTKApi(viewports);
+
+      if (isA2DAPI(apis[viewports.activeViewportIndex])) {
+        apis[viewports.activeViewportIndex] = api;
+        _setView(api, sliceNormal, viewUp);
+      }
+  }
+
+  function isA2DAPI(api) {
+    return api.type === "VIEW2D";
+  }
+
+  function get2DViewsAPIs() {
+    return apis.filter((api) => isA2DAPI(api));
+  }
+
   const _convertModelToWorldSpace = (position, vtkImageData) => {
     const indexToWorld = vtkImageData.getIndexToWorld();
     const pos = vec3.create();
@@ -124,8 +142,8 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       return apis[index];
     },
     resetMPRView() {
-      apis.forEach(api => {
-        // Reset crosshairs
+      const APIs2D = get2DViewsAPIs();
+      APIs2D.forEach(api => {
         api.resetOrientation();
 
         // Reset window/level
@@ -136,28 +154,33 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       });
 
       // Reset the crosshairs
-      apis[0].svgWidgets.rotatableCrosshairsWidget.resetCrosshairs(apis, 0);
+      APIs2D[0].svgWidgets.rotatableCrosshairsWidget.resetCrosshairs(apis, 0);
     },
     axial: async ({ viewports }) => {
-      const api = await _getActiveViewportVTKApi(viewports);
+      await set2DOrientation(viewports, [0, 0, 1], [0, -1, 0]);
+      // const api = await _getActiveViewportVTKApi(viewports);
 
-      apis[viewports.activeViewportIndex] = api;
-
-      _setView(api, [0, 0, 1], [0, -1, 0]);
+      // if (isA2DAPI(apis[viewports.activeViewportIndex])) {
+      //   apis[viewports.activeViewportIndex] = api;
+      //   _setView(api, );
+      // }
     },
     sagittal: async ({ viewports }) => {
-      const api = await _getActiveViewportVTKApi(viewports);
+      await set2DOrientation(viewports, [1, 0, 0], [0, 0, 1]);
+      // const api = await _getActiveViewportVTKApi(viewports);
 
-      apis[viewports.activeViewportIndex] = api;
 
-      _setView(api, [1, 0, 0], [0, 0, 1]);
+      // apis[viewports.activeViewportIndex] = api;
+
+      // _setView(api, [1, 0, 0], [0, 0, 1]);
     },
     coronal: async ({ viewports }) => {
-      const api = await _getActiveViewportVTKApi(viewports);
+      await set2DOrientation(viewports, [0, 1, 0], [0, 0, 1]);
+      // const api = await _getActiveViewportVTKApi(viewports);
 
-      apis[viewports.activeViewportIndex] = api;
+      // apis[viewports.activeViewportIndex] = api;
 
-      _setView(api, [0, 1, 0], [0, 0, 1]);
+      // _setView(api, [0, 1, 0], [0, 0, 1]);
     },
     requestNewSegmentation: async ({ viewports }) => {
       const allViewports = Object.values(viewports.viewportSpecificData);
@@ -166,11 +189,15 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
 
         if (!api) {
           api = await _getActiveViewportVTKApi(viewports);
-          apis[viewportIndex] = api;
+          if (isA2DAPI(api)) {
+            apis[viewportIndex] = api;
+          }
         }
 
-        api.requestNewSegmentation();
-        api.updateImage();
+        if (isA2DAPI(api)) {
+          api.requestNewSegmentation();
+          api.updateImage();
+        }
       });
       await Promise.all(promises);
     },
@@ -190,7 +217,14 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
 
       if (!api) {
         api = await _getActiveViewportVTKApi(viewports);
-        apis[viewports.activeViewportIndex] = api;
+
+        if (isA2DAPI(api)) {
+          apis[viewports.activeViewportIndex] = api;
+        }
+      }
+
+      if (!isA2DAPI(api)) {
+        return null;
       }
 
       const stack = OHIFVTKViewport.getCornerstoneStack(
@@ -252,7 +286,12 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
 
         if (!api) {
           api = await _getActiveViewportVTKApi(viewports);
-          apis[viewportIndex] = api;
+          if (isA2DAPI(api)) {
+            apis[viewportIndex] = api;
+          }
+        }
+        if (!isA2DAPI(api)) {
+          return null;
         }
 
         api.setGlobalOpacity(globalOpacity);
@@ -270,7 +309,13 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
 
         if (!api) {
           api = await _getActiveViewportVTKApi(viewports);
-          apis[viewportIndex] = api;
+          if (isA2DAPI(api)) {
+            apis[viewportIndex] = api;
+          }
+        }
+
+        if (!isA2DAPI(api)) {
+          return null;
         }
 
         api.setSegmentVisibility(segmentNumber, visible);
@@ -279,23 +324,25 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       await Promise.all(promises);
     },
     enableRotateTool: () => {
-      apis.forEach((api, apiIndex) => {
+      const apis2D = get2DViewsAPIs();
+      apis2D.forEach((api, apiIndex) => {
         const istyle = vtkInteractorStyleMPRRotate.newInstance();
 
         api.setInteractorStyle({
           istyle,
-          configuration: { apis, apiIndex, uid: api.uid },
+          configuration: { apis: apis2D, apiIndex, uid: api.uid },
         });
       });
     },
     enableCrosshairsTool: () => {
-      apis.forEach((api, apiIndex) => {
+      const apis2D = get2DViewsAPIs();
+      apis2D.forEach((api, apiIndex) => {
         const istyle = vtkInteractorStyleRotatableMPRCrosshairs.newInstance();
 
         api.setInteractorStyle({
           istyle,
           configuration: {
-            apis,
+            apis: apis2D,
             apiIndex,
             uid: api.uid,
           },
@@ -303,13 +350,13 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       });
 
       const rotatableCrosshairsWidget =
-        apis[0].svgWidgets.rotatableCrosshairsWidget;
+      apis2D[0].svgWidgets.rotatableCrosshairsWidget;
 
       const referenceLines = rotatableCrosshairsWidget.getReferenceLines();
 
       // Initilise crosshairs if not initialised.
       if (!referenceLines) {
-        rotatableCrosshairsWidget.resetCrosshairs(apis, 0);
+        rotatableCrosshairsWidget.resetCrosshairs(apis2D, 0);
       }
     },
     enableLevelTool: () => {
@@ -333,23 +380,24 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
         },
       };
 
-      apis.forEach((api, apiIndex) => {
+      const apis2D = get2DViewsAPIs();
+      apis2D.forEach((api, apiIndex) => {
         const istyle = vtkInteractorStyleMPRWindowLevel.newInstance();
 
         api.setInteractorStyle({
           istyle,
           callbacks,
-          configuration: { apis, apiIndex, uid: api.uid },
+          configuration: {  apis: apis2D, apiIndex, uid: api.uid },
         });
       });
     },
     setSlabThickness: ({ slabThickness }) => {
-      apis.forEach(api => {
+      get2DViewsAPIs().forEach(api => {
         api.setSlabThickness(slabThickness);
       });
     },
     changeSlabThickness: ({ change }) => {
-      apis.forEach(api => {
+      get2DViewsAPIs().forEach(api => {
         const slabThickness = Math.max(api.getSlabThickness() + change, 0.1);
 
         api.setSlabThickness(slabThickness);
@@ -358,17 +406,19 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
     setBlendModeToComposite: () => {
       apis.forEach(api => {
         const renderWindow = api.genericRenderWindow.getRenderWindow();
-        const istyle = renderWindow.getInteractor().getInteractorStyle();
-
-        const slabThickness = api.getSlabThickness();
 
         const mapper = api.volumes[0].getMapper();
         if (mapper.setBlendModeToComposite) {
           mapper.setBlendModeToComposite();
         }
 
-        if (istyle.setSlabThickness) {
-          istyle.setSlabThickness(slabThickness);
+        if (isA2DAPI(api)) {
+          const istyle = renderWindow.getInteractor().getInteractorStyle();
+
+          const slabThickness = api.getSlabThickness();
+          if (istyle.setSlabThickness) {
+            istyle.setSlabThickness(slabThickness);
+          }
         }
         renderWindow.render();
       });
@@ -397,7 +447,7 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       const displaySet =
         viewports.viewportSpecificData[viewports.activeViewportIndex];
 
-      // Get current VOI if cornerstone viewport.
+        // Get current VOI if cornerstone viewport.
       const cornerstoneVOI = getVOIFromCornerstoneViewport();
       defaultVOI = cornerstoneVOI;
 
@@ -436,7 +486,8 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       }
 
       // Add widgets and set default interactorStyle of each viewport.
-      apis.forEach((api, apiIndex) => {
+      const apis2D = get2DViewsAPIs();
+      apis2D.forEach((api, apiIndex) => {
         api.addSVGWidget(
           vtkSVGRotatableCrosshairsWidget.newInstance(),
           'rotatableCrosshairsWidget'
@@ -447,20 +498,20 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
 
         api.setInteractorStyle({
           istyle,
-          configuration: { apis, apiIndex, uid },
+          configuration: {  apis: apis2D, apiIndex, uid },
         });
 
         api.svgWidgets.rotatableCrosshairsWidget.setApiIndex(apiIndex);
-        api.svgWidgets.rotatableCrosshairsWidget.setApis(apis);
+        api.svgWidgets.rotatableCrosshairsWidget.setApis(apis2D);
       });
 
-      const firstApi = apis[0];
+      const firstApi = apis2D[0];
 
       // Initialise crosshairs
-      apis[0].svgWidgets.rotatableCrosshairsWidget.resetCrosshairs(apis, 0);
+      firstApi.svgWidgets.rotatableCrosshairsWidget.resetCrosshairs(apis2D, 0);
 
       // Check if we have full WebGL 2 support
-      const openGLRenderWindow = apis[0].genericRenderWindow.getOpenGLRenderWindow();
+      const openGLRenderWindow = firstApi.genericRenderWindow.getOpenGLRenderWindow();
 
       if (!openGLRenderWindow.getWebgl2()) {
         // Throw a warning if we don't have WebGL 2 support,
@@ -494,6 +545,26 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
         }
       }
     },
+    enable3DView: async ({ viewports }) => {
+      const currentLayout = viewports.layout.viewports;
+      const add3DView = currentLayout.findIndex((layout) => layout.vtk.mode === "3d") === -1;
+      const MPRViewports = currentLayout.filter((layout) => layout.vtk.mode === "mpr");
+      const viewportSpecificData = viewports.viewportSpecificData;
+      const displaySet =
+        viewports.viewportSpecificData[viewports.activeViewportIndex];
+      try {
+        apis = await setMPRAnd3DLayout(displaySet, MPRViewports, get2DViewsAPIs(), viewportSpecificData, add3DView);
+      } catch (error) {
+        throw new Error(error);
+      }
+
+      // Render
+      apis.forEach((api) => {
+        const genericRenderWindow = api.genericRenderWindow;
+        genericRenderWindow.resize();
+        genericRenderWindow.getRenderWindow().render();
+      })
+    }
   };
 
   window.vtkActions = actions;
@@ -585,6 +656,12 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
     },
     mpr2d: {
       commandFn: actions.mpr2d,
+      storeContexts: ['viewports'],
+      options: {},
+      context: 'VIEWER',
+    },
+    enable3DView: {
+      commandFn: actions.enable3DView,
       storeContexts: ['viewports'],
       options: {},
       context: 'VIEWER',
