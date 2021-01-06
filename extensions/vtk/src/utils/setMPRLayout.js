@@ -32,7 +32,7 @@ export default function setMPRLayout(
       const viewportProps = viewportPropsArray[index];
       viewports[index] = Object.assign({}, viewports[index], {
         vtk: {
-          mode: 'mpr', // TODO: not used
+          mode: 'mpr',
           afterCreation: api => {
             apis[index] = api;
 
