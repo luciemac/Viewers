@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import { View2D } from 'react-vtkjs-viewport';
+import { View2D, View3D } from 'react-vtkjs-viewport';
 import PropTypes from 'prop-types';
 
 import './VTKViewport.css';
@@ -32,13 +32,14 @@ const VTKViewport = props => {
       window.removeEventListener('vtkscrollevent', handleScrollEvent);
   }, [props, props.onScroll, props.viewportIndex, setViewportActiveHandler]);
 
+  const view = props.mode === "mpr" ? (<View2D {...props} />) : (<View3D {...props} />)
   return (
     <div
       className="vtk-viewport-handler"
       style={style}
       onClick={setViewportActiveHandler}
     >
-      <View2D {...props} />
+      {view}
     </div>
   );
 };
