@@ -24,6 +24,7 @@ export default function setMPRLayout(
       viewports.push({});
       viewportSpecificData[i] = displaySet;
       viewportSpecificData[i].plugin = 'vtk';
+      viewportSpecificData[i].viewMode = 'mpr';
     }
 
     const apis = [];
