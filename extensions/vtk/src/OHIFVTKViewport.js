@@ -17,6 +17,7 @@ const { StackManager } = OHIF.utils;
 
 // TODO: Figure out where we plan to put this long term
 const volumeCache = {};
+const volume3DCache = {};
 const labelmapCache = {};
 
 /**
@@ -221,8 +222,11 @@ class OHIFVTKViewport extends Component {
    * @memberof OHIFVTKViewport
    */
   getOrCreateVolume(imageDataObject, displaySetInstanceUID) {
-    if (volumeCache[displaySetInstanceUID]) {
+    const viewMode = this.props.viewportData.displaySet.viewMode;
+    if (viewMode === 'mpr' && volumeCache[displaySetInstanceUID]) {
       return volumeCache[displaySetInstanceUID];
+    } else if (viewMode === '3d' && volume3DCache[displaySetInstanceUID]) {
+      return volume3DCache[displaySetInstanceUID];
     }
 
     const { vtkImageData, imageMetaData0 } = imageDataObject;
@@ -261,7 +265,11 @@ class OHIFVTKViewport extends Component {
     // TODO: maybe we should auto adjust samples to 1000.
     volumeMapper.setMaximumSamplesPerRay(4000);
 
-    volumeCache[displaySetInstanceUID] = volumeActor;
+    if (viewMode === 'mpr') {
+      volumeCache[displaySetInstanceUID] = volumeActor;
+    } else {
+      volume3DCache[displaySetInstanceUID] = volumeActor;
+    }
 
     return volumeActor;
   }
