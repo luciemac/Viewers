@@ -100,6 +100,8 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
 
     apis.forEach(api => {
       api.updateVOI(windowWidth, windowCenter);
+      // initialize initial VOI
+      api.setInitialVOI(windowWidth, windowCenter);
     });
   }
 
