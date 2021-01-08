@@ -145,13 +145,15 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       const APIs2D = get2DViewsAPIs();
       APIs2D.forEach(api => {
         api.resetOrientation();
+      });
 
+      apis.forEach((api) => {
         // Reset window/level
         api.resetWindowLevel();
-
-        // Reset VOI
-        if (defaultVOI) setVOI(defaultVOI);
       });
+
+      // Reset VOI
+      if (defaultVOI) setVOI(defaultVOI);
 
       // Reset the crosshairs
       APIs2D[0].svgWidgets.rotatableCrosshairsWidget.resetCrosshairs(apis, 0);
@@ -481,12 +483,13 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
         throw new Error(error);
       }
 
+      const apis2D = get2DViewsAPIs();
+
       if (cornerstoneVOI) {
         setVOI(cornerstoneVOI);
       }
 
       // Add widgets and set default interactorStyle of each viewport.
-      const apis2D = get2DViewsAPIs();
       apis2D.forEach((api, apiIndex) => {
         api.addSVGWidget(
           vtkSVGRotatableCrosshairsWidget.newInstance(),
@@ -552,10 +555,21 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       const viewportSpecificData = viewports.viewportSpecificData;
       const displaySet =
         viewports.viewportSpecificData[viewports.activeViewportIndex];
+
+      // Get current VOI in2D views.
+      const apis2D = get2DViewsAPIs();
+      const cornerstoneVOI = apis2D[0].getCurrentVOI();
+
       try {
         apis = await setMPRAnd3DLayout(displaySet, MPRViewports, get2DViewsAPIs(), viewportSpecificData, add3DView);
       } catch (error) {
         throw new Error(error);
+      }
+
+      if (cornerstoneVOI) {
+        const api3D = apis.find((api) => !isA2DAPI(api));
+        api3D.setInitialVOI(cornerstoneVOI.windowWidth, cornerstoneVOI.windowCenter);
+        api3D.updateVOI(cornerstoneVOI.windowWidth, cornerstoneVOI.windowCenter);
       }
 
       // Render

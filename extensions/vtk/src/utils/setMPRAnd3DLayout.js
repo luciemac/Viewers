@@ -19,11 +19,12 @@ export default function setMPRAnd3DLayout(
 
       viewportSpecificData[nbMPRViewports] = displaySet;
       viewportSpecificData[nbMPRViewports].plugin = 'vtk';
+      viewportSpecificData[nbMPRViewports].viewMode = '3d';
 
       viewports.push({});
       viewports[nbMPRViewports] = {
         vtk: {
-          mode: "3d",
+          mode: '3d',
           afterCreation: api => {
             apis[nbMPRViewports] = api;
             resolve(apis);
