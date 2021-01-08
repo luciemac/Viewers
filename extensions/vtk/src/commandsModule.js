@@ -97,6 +97,8 @@ const commandsModule = ({ commandsManager, UINotificationService }) => {
 
     apis.forEach(api => {
       api.updateVOI(windowWidth, windowCenter);
+      // initialize initial VOI
+      api.setInitialVOI(windowWidth, windowCenter);
     });
   }
 
