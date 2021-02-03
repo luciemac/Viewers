@@ -116,8 +116,16 @@ const commandsModule = ({ commandsManager, UINotificationService }) => {
     return api.type === "VIEW2D";
   }
 
+  function isA3DAPI(api) {
+    return api.type === "VIEW3D";
+  }
+
   function get2DViewsAPIs() {
     return apis.filter((api) => isA2DAPI(api));
+  }
+
+  function get3DViewsAPIs() {
+    return apis.filter((api) => isA3DAPI(api));
   }
 
   const _convertModelToWorldSpace = (position, vtkImageData) => {
@@ -140,43 +148,33 @@ const commandsModule = ({ commandsManager, UINotificationService }) => {
     },
     resetMPRView() {
       const APIs2D = get2DViewsAPIs();
-      APIs2D.forEach(api => {
-        api.resetOrientation();
-      });
+      const APIs3D = get3DViewsAPIs();
 
+      // Reset APIs window/level
       apis.forEach((api) => {
-        // Reset window/level
         api.resetWindowLevel();
       })
 
-      // Reset the crosshairs
-      APIs2D[0].svgWidgets.rotatableCrosshairsWidget.resetCrosshairs(apis, 0);
+      // Reset 2D APIs orientation and crosshairs
+      APIs2D.forEach(api => {
+        api.resetOrientation();
+      });
+      // Do not need to be called on each 2D API as long resetCrosshairs already do
+      APIs2D[0].svgWidgets.rotatableCrosshairsWidget.resetCrosshairs(APIs2D, 0);
+
+      // Reset 3D cameras
+      APIs3D.forEach((api) => {
+        api.resetCamera();
+      });
     },
     axial: async ({ viewports }) => {
       await set2DOrientation(viewports, [0, 0, 1], [0, -1, 0]);
-      // const api = await _getActiveViewportVTKApi(viewports);
-
-      // if (isA2DAPI(apis[viewports.activeViewportIndex])) {
-      //   apis[viewports.activeViewportIndex] = api;
-      //   _setView(api, );
-      // }
     },
     sagittal: async ({ viewports }) => {
       await set2DOrientation(viewports, [1, 0, 0], [0, 0, 1]);
-      // const api = await _getActiveViewportVTKApi(viewports);
-
-
-      // apis[viewports.activeViewportIndex] = api;
-
-      // _setView(api, [1, 0, 0], [0, 0, 1]);
     },
     coronal: async ({ viewports }) => {
       await set2DOrientation(viewports, [0, 1, 0], [0, 0, 1]);
-      // const api = await _getActiveViewportVTKApi(viewports);
-
-      // apis[viewports.activeViewportIndex] = api;
-
-      // _setView(api, [0, 1, 0], [0, 0, 1]);
     },
     requestNewSegmentation: async ({ viewports }) => {
       const allViewports = Object.values(viewports.viewportSpecificData);
@@ -430,6 +428,7 @@ const commandsModule = ({ commandsManager, UINotificationService }) => {
       });
     },
     setBlendMode: ({ blendMode }) => {
+      console.log('SET BLEND MODE');
       apis.forEach(api => {
         const renderWindow = api.genericRenderWindow.getRenderWindow();
 
