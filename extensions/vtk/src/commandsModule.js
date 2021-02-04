@@ -434,7 +434,6 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       });
     },
     setBlendMode: ({ blendMode }) => {
-      console.log('SET BLEND MODE');
       apis.forEach(api => {
         const renderWindow = api.genericRenderWindow.getRenderWindow();
 
@@ -565,10 +564,12 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
         throw new Error(error);
       }
 
-      if (cornerstoneVOI) {
-        const api3D = apis.find((api) => !isA2DAPI(api));
-        api3D.setInitialVOI(cornerstoneVOI.windowWidth, cornerstoneVOI.windowCenter);
-        api3D.updateVOI(cornerstoneVOI.windowWidth, cornerstoneVOI.windowCenter);
+      if (add3DView && cornerstoneVOI) {
+        const api3D = get3DViewsAPIs();
+        api3D.forEach((api3D) => {
+          api3D.setInitialVOI(cornerstoneVOI.windowWidth, cornerstoneVOI.windowCenter);
+          api3D.updateVOI(cornerstoneVOI.windowWidth, cornerstoneVOI.windowCenter);
+        }) 
       }
 
       // Render
