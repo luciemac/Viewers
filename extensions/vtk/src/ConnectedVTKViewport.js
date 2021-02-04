@@ -44,7 +44,7 @@ const mapDispatchToProps = (dispatch, ownProps) => {
 };
 
 const mergeProps = (propsFromState, propsFromDispatch, ownProps) => {
-  const { afterCreation } = propsFromState;
+  const { afterCreation, afterDestroyed } = propsFromState;
 
   const props = {
     ...propsFromState,
@@ -68,6 +68,11 @@ const mergeProps = (propsFromState, propsFromDispatch, ownProps) => {
         afterCreation(api);
       }
     },
+    onDestroyed: () => {
+      if (afterDestroyed && typeof afterDestroyed === 'function') {
+        afterDestroyed();
+      }
+    }
   };
   return props;
 };

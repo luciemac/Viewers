@@ -41,6 +41,13 @@ export default function setMPRLayout(
               resolve(apis);
             }
           },
+          afterDestroyed: () => {
+            apis.forEach((api) => {
+              if (api && api.resetMIP) {
+                api.resetMIP();
+              }
+            });
+          },
           ...viewportProps,
         },
       });

@@ -28,7 +28,14 @@ export default function setMPRAnd3DLayout(
           afterCreation: api => {
             apis[nbMPRViewports] = api;
             resolve(apis);
-          }
+          },
+          afterDestroyed: () => {
+            apis.forEach((api) => {
+              if (api && api.resetMIP) {
+                api.resetMIP();
+              }
+            });
+          },
         }
       }
     } else {
