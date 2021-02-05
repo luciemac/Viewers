@@ -500,10 +500,13 @@ const commandsModule = ({ commandsManager, UINotificationService }) => {
         );
 
         const uid = api.uid;
-        const istyle = vtkInteractorStyleRotatableMPRCrosshairs.newInstance();
+        const istyle = isLevelToolEnabled 
+          ? vtkInteractorStyleMPRWindowLevel.newInstance() 
+          : vtkInteractorStyleRotatableMPRCrosshairs.newInstance();
 
         api.setInteractorStyle({
           istyle,
+          callbacks: isLevelToolEnabled ? callbacks : {},
           configuration: {  apis: apis2D, apiIndex, uid },
         });
 
