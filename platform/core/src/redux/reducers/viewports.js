@@ -192,19 +192,45 @@ const viewports = (state = DEFAULT_STATE, action) => {
     // Allow fall-through
     // eslint-disable-next-line
     case SET_SPECIFIC_DATA: {
-      const layout = cloneDeep(state.layout);
-      const viewportIndex = useActiveViewport
-        ? state.activeViewportIndex
-        : action.viewportIndex;
-
+      let layout = cloneDeep(state.layout);
       let viewportSpecificData = cloneDeep(state.viewportSpecificData);
-      viewportSpecificData[viewportIndex] = {
-        ...action.viewportSpecificData,
-      };
+      const isVTK = layout.viewports.every((viewport) => viewport.vtk);
 
-      if (action.viewportSpecificData && action.viewportSpecificData.plugin) {
-        layout.viewports[viewportIndex].plugin =
-          action.viewportSpecificData.plugin;
+      if (isVTK) {
+        viewportSpecificData = {};
+
+        if (action.viewportSpecificData.isReconstructable) {
+        Object.keys(state.viewportSpecificData).forEach((key) => {
+          viewportSpecificData[key] = Object.assign({}, action.viewportSpecificData, {
+            plugin: 'vtk'
+          });
+        });
+        } else {
+          // Reset layout to default one: cornerstone
+          layout = {
+              numRows: 1,
+              numColumns: 1,
+              viewports: [{ plugin: action.viewportSpecificData.plugin}],
+          };
+
+          viewportSpecificData[0] = {
+            ...action.viewportSpecificData,
+          };
+        }
+      } else {
+        const viewportIndex = useActiveViewport
+          ? state.activeViewportIndex
+          : action.viewportIndex;
+
+
+        viewportSpecificData[viewportIndex] = {
+          ...action.viewportSpecificData,
+        };
+
+        if (action.viewportSpecificData && action.viewportSpecificData.plugin) {
+          layout.viewports[viewportIndex].plugin =
+            action.viewportSpecificData.plugin;
+        }
       }
 
       return { ...state, layout, viewportSpecificData };

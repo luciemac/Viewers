@@ -366,6 +366,13 @@ class OHIFVTKViewport extends Component {
       displaySet.SOPInstanceUID !== prevDisplaySet.SOPInstanceUID ||
       displaySet.frameIndex !== prevDisplaySet.frameIndex
     ) {
+      // Reset state as if it was detroyed
+      this.setState({
+        paintFilterLabelMapImageData: null,
+        paintFilterBackgroundImageData: null,
+        percentComplete: 0,
+        isLoaded: false,
+      });
       this.setStateFromProps();
     }
   }

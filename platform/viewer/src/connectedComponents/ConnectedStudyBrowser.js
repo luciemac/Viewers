@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import { StudyBrowser } from '@ohif/ui';
 import cloneDeep from 'lodash.clonedeep';
 import findDisplaySetByUID from './findDisplaySetByUID';
+import ViewportErrorIndicator from '../../../ui/src/viewer/ViewportErrorIndicator';
 
 const { studyMetadataManager } = OHIF.utils;
 
@@ -17,6 +18,7 @@ const mapStateToProps = (state, ownProps) => {
   // progress bar is updated
   const stackLoadingProgressMap = state.loading.progress;
   const studiesWithLoadingData = cloneDeep(ownProps.studies);
+  const { viewports } = state;
 
   studiesWithLoadingData.forEach(study => {
     study.thumbnails.forEach(data => {
