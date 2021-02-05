@@ -21,6 +21,7 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
   // TODO: Put this somewhere else
   let apis = {};
   let defaultVOI;
+  let isLevelToolEnabled = false;
 
   async function _getActiveViewportVTKApi(viewports) {
     const {
@@ -130,6 +131,25 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
   function get3DViewsAPIs() {
     return apis.filter((api) => isA3DAPI(api));
   }
+
+  function updateVOI(apis, windowWidth, windowCenter) {
+    apis.forEach(api => {
+      api.updateVOI(windowWidth, windowCenter);
+    });
+  }
+
+  const throttledUpdateVOIs = throttle(updateVOI, 16, { trailing: true }); // ~ 60 fps
+
+  const callbacks = {
+    setOnLevelsChanged: ({ windowCenter, windowWidth }) => {
+      apis.forEach(api => {
+        const renderWindow = api.genericRenderWindow.getRenderWindow();
+        renderWindow.render();
+      });
+
+      throttledUpdateVOIs(apis, windowWidth, windowCenter);
+    },
+  };
 
   const _convertModelToWorldSpace = (position, vtkImageData) => {
     const indexToWorld = vtkImageData.getIndexToWorld();
@@ -335,6 +355,7 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       });
     },
     enableCrosshairsTool: () => {
+      isLevelToolEnabled = false;
       const apis2D = get2DViewsAPIs();
       apis2D.forEach((api, apiIndex) => {
         const istyle = vtkInteractorStyleRotatableMPRCrosshairs.newInstance();
@@ -358,28 +379,14 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
       if (!referenceLines) {
         rotatableCrosshairsWidget.resetCrosshairs(apis2D, 0);
       }
+
+      const apis3D = get3DViewsAPIs();
+      apis3D.forEach((api) => {
+        api.enableWindowLevel({enableWindowLevel: false});
+      });
     },
     enableLevelTool: () => {
-      function updateVOI(apis, windowWidth, windowCenter) {
-        apis.forEach(api => {
-          api.updateVOI(windowWidth, windowCenter);
-        });
-      }
-
-      const throttledUpdateVOIs = throttle(updateVOI, 16, { trailing: true }); // ~ 60 fps
-
-      const callbacks = {
-        setOnLevelsChanged: ({ windowCenter, windowWidth }) => {
-          apis.forEach(api => {
-            const renderWindow = api.genericRenderWindow.getRenderWindow();
-
-            renderWindow.render();
-          });
-
-          throttledUpdateVOIs(apis, windowWidth, windowCenter);
-        },
-      };
-
+      isLevelToolEnabled = true;
       const apis2D = get2DViewsAPIs();
       apis2D.forEach((api, apiIndex) => {
         const istyle = vtkInteractorStyleMPRWindowLevel.newInstance();
@@ -389,6 +396,11 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
           callbacks,
           configuration: {  apis: apis2D, apiIndex, uid: api.uid },
         });
+      });
+
+      const apis3D = get3DViewsAPIs();
+      apis3D.forEach((api) => {
+        api.enableWindowLevel({enableWindowLevel: true, onLevelsChangedCallback: callbacks.setOnLevelsChanged});
       });
     },
     setSlabThickness: ({ slabThickness }) => {
@@ -569,6 +581,9 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
         api3D.forEach((api3D) => {
           api3D.setInitialVOI(cornerstoneVOI.windowWidth, cornerstoneVOI.windowCenter);
           api3D.updateVOI(cornerstoneVOI.windowWidth, cornerstoneVOI.windowCenter);
+          if (isLevelToolEnabled) {
+            api3D.enableWindowLevel({enableWindowLevel: true, onLevelsChangedCallback: callbacks.setOnLevelsChanged});
+          }
         }) 
       }
 
