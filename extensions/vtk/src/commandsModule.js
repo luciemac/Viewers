@@ -138,6 +138,27 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
     });
   }
 
+  function set2DViewsWindowLevelInteraction() {
+    // Set MPR WindowLevel Interactor Style to 2D views
+    const apis2D = get2DViewsAPIs();
+    apis2D.forEach((api, apiIndex) => {
+      const istyle = vtkInteractorStyleMPRWindowLevel.newInstance();
+
+      api.setInteractorStyle({
+        istyle,
+        callbacks,
+        configuration: {  apis: apis2D, apiIndex, uid: api.uid },
+      });
+    });
+  }
+
+  function set3DViewsRotateInteraction() {
+    const apis3D = get3DViewsAPIs();
+    apis3D.forEach((api) => {
+      api.enableWindowLevel({enableWindowLevel: false});
+    });
+  }
+
   const throttledUpdateVOIs = throttle(updateVOI, 16, { trailing: true }); // ~ 60 fps
 
   const callbacks = {
@@ -380,28 +401,24 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
         rotatableCrosshairsWidget.resetCrosshairs(apis2D, 0);
       }
 
-      const apis3D = get3DViewsAPIs();
-      apis3D.forEach((api) => {
-        api.enableWindowLevel({enableWindowLevel: false});
-      });
+      set3DViewsRotateInteraction();
     },
     enableLevelTool: () => {
       isLevelToolEnabled = true;
-      const apis2D = get2DViewsAPIs();
-      apis2D.forEach((api, apiIndex) => {
-        const istyle = vtkInteractorStyleMPRWindowLevel.newInstance();
-
-        api.setInteractorStyle({
-          istyle,
-          callbacks,
-          configuration: {  apis: apis2D, apiIndex, uid: api.uid },
-        });
-      });
+      set2DViewsWindowLevelInteraction();
 
       const apis3D = get3DViewsAPIs();
       apis3D.forEach((api) => {
         api.enableWindowLevel({enableWindowLevel: true, onLevelsChangedCallback: callbacks.setOnLevelsChanged});
       });
+    },
+    setDefaultInteractions: ()=> {
+      // By default:
+      // - enable window/level interaction to 2D views
+      // - enable rotation interaction to 3D views
+      isLevelToolEnabled = false;
+      set2DViewsWindowLevelInteraction();
+      set3DViewsRotateInteraction();
     },
     setSlabThickness: ({ slabThickness }) => {
       get2DViewsAPIs().forEach(api => {
@@ -507,13 +524,11 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
         );
 
         const uid = api.uid;
-        const istyle = isLevelToolEnabled 
-          ? vtkInteractorStyleMPRWindowLevel.newInstance() 
-          : vtkInteractorStyleRotatableMPRCrosshairs.newInstance();
+        const istyle = vtkInteractorStyleMPRWindowLevel.newInstance();
 
         api.setInteractorStyle({
           istyle,
-          callbacks: isLevelToolEnabled ? callbacks : {},
+          callbacks: callbacks,
           configuration: {  apis: apis2D, apiIndex, uid },
         });
 
@@ -647,6 +662,10 @@ const commandsModule = ({ commandsManager, servicesManager }) => {
     },
     enableLevelTool: {
       commandFn: actions.enableLevelTool,
+      options: {},
+    },
+    setDefaultInteractions: {
+      commandFn: actions.setDefaultInteractions,
       options: {},
     },
     resetMPRView: {

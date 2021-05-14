@@ -8,6 +8,15 @@ const TOOLBAR_BUTTON_TYPES = {
 
 const definitions = [
   {
+    id: 'DefaultInteractors',
+    label: 'Default',
+    icon: 'star',
+    //
+    type: TOOLBAR_BUTTON_TYPES.SET_TOOL_ACTIVE,
+    commandName: 'setDefaultInteractions',
+    commandOptions: {},
+  },
+  {
     id: 'Crosshairs',
     label: 'Crosshairs',
     icon: 'crosshairs',
